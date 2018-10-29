@@ -96,8 +96,11 @@ class ClientTest extends \PHPUnit\Framework\TestCase
      */
     public function testGetAllDatabasesCantConnect()
     {
+        $message = 'Failed to connect to host port 5984';
+        $request = new Request('GET', '/_all_dbs');
+
         $handler = MockHandler::createWithMiddleware([
-            new ConnectException('Failed to connect to host port 5984', new Request('GET', '/_all_dbs')),
+            new ConnectException($message, $request),
         ]);
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
@@ -110,9 +113,9 @@ class ClientTest extends \PHPUnit\Framework\TestCase
      */
     public function testGetAllDatabasesUnauthorized()
     {
+        $message  = 'Client error: `GET http://user:***@host:5984/_all_dbs` resulted in a `401 Unauthorized`';
         $request  = new Request('GET', '/_all_dbs');
         $response = new Response(401, [], '{"error":"unauthorized","reason":"Name or password is incorrect."}');
-        $message  = 'Client error: `GET http://user:***@host:5984/_all_dbs` resulted in a `401 Unauthorized`';
 
         $handler = MockHandler::createWithMiddleware([
             new ClientException($message, $request, $response),
@@ -120,5 +123,64 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $client->getAllDatabases();
+    }
+
+    public function testIsDatabaseExists()
+    {
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $this::assertTrue($client->isDatabaseExists('database'));
+    }
+
+    public function testIsDatabaseNotExists()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database` resulted in a `404 Object Not Found`';
+        $request  = new Request('HEAD', '/database');
+        $response = new Response(404);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $this::assertFalse($client->isDatabaseExists('database'));
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\ConnectionException
+     * @expectedExceptionMessage Failed to connect to host port 5984
+     */
+    public function testIsDatabaseExistsCantConnect()
+    {
+        $message = 'Failed to connect to host port 5984';
+        $request = new Request('HEAD', '/database');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ConnectException($message, $request),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDatabaseExists('database');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\UnauthorizedException
+     * @expectedExceptionMessage Client error: `HEAD http://user:***@host:5984/database` resulted in a `401 Unauthorized`
+     */
+    public function testIsDatabaseExistsUnauthorized()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database` resulted in a `401 Unauthorized`';
+        $request  = new Request('HEAD', '/database');
+        $response = new Response(401, [], '{"error":"unauthorized","reason":"Name or password is incorrect."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDatabaseExists('database');
     }
 }

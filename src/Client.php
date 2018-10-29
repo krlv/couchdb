@@ -76,6 +76,23 @@ class Client
     }
 
     /**
+     * Check if database exists
+     * @link http://docs.couchdb.org/en/stable/api/database/common.html#head--db
+     *
+     * @param string $db Database name
+     * @return bool
+     */
+    public function isDatabaseExists(string $db): bool
+    {
+        try {
+            $this->request('HEAD', sprintf('/%s', $db));
+            return true;
+        } catch (NotFoundException $exception) {
+            return false;
+        }
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
