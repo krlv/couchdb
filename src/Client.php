@@ -93,6 +93,18 @@ class Client
     }
 
     /**
+     * Returns the database information
+     * @link http://docs.couchdb.org/en/stable/api/database/common.html#get--db
+     *
+     * @param string $db Database name
+     * @return array
+     */
+    public function getDatabase(string $db): array
+    {
+        return $this->request('GET', sprintf('/%s', $db));
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method

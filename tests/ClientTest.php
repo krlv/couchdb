@@ -183,4 +183,16 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $client->isDatabaseExists('database');
     }
+
+    public function testGetDatabase()
+    {
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"db_name":"database"}'),
+        ]);
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $database = $client->getDatabase('database');
+
+        $this::assertEquals(['db_name' => 'database'], $database);
+    }
 }
