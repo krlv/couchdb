@@ -167,6 +167,24 @@ class ClientTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `HEAD http://user:***@host:5984/database` resulted in a `500 Internal Server Error`
+     */
+    public function testIsDatabaseExistsServerException()
+    {
+        $message  = 'Server error: `HEAD http://user:***@host:5984/database` resulted in a `500 Internal Server Error`';
+        $request  = new Request('HEAD', '/database');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getAllDatabases();
+    }
+
+    /**
      * @expectedException \Couchdb\Exception\UnauthorizedException
      * @expectedExceptionMessage Client error: `HEAD http://user:***@host:5984/database` resulted in a `401 Unauthorized`
      */
@@ -194,5 +212,76 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $database = $client->getDatabase('database');
 
         $this::assertEquals(['db_name' => 'database'], $database);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\NotFoundException
+     * @expectedExceptionMessage Client error: `GET http://user:***@host:5984/database` resulted in a `404 Object Not Found`
+     */
+    public function testGetDatabaseNotFound()
+    {
+        $message  = 'Client error: `GET http://user:***@host:5984/database` resulted in a `404 Object Not Found`';
+        $request  = new Request('GET', '/database');
+        $response = new Response(404);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDatabase('database');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\ConnectionException
+     * @expectedExceptionMessage Failed to connect to host port 5984
+     */
+    public function testGetDatabaseCantConnect()
+    {
+        $message = 'Failed to connect to host port 5984';
+        $request = new Request('GET', '/database');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ConnectException($message, $request),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDatabase('database');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `GET http://user:***@host:5984/database` resulted in a `500 Internal Server Error`
+     */
+    public function testGetDatabaseServerException()
+    {
+        $message  = 'Server error: `GET http://user:***@host:5984/database` resulted in a `500 Internal Server Error`';
+        $request  = new Request('GET', '/database');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDatabase('database');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\UnauthorizedException
+     * @expectedExceptionMessage Client error: `GET http://user:***@host:5984/database` resulted in a `401 Unauthorized`
+     */
+    public function testGetDatabaseUnauthorized()
+    {
+        $message  = 'Client error: `GET http://user:***@host:5984/database` resulted in a `401 Unauthorized`';
+        $request  = new Request('GET', '/database');
+        $response = new Response(401, [], '{"error":"unauthorized","reason":"Name or password is incorrect."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDatabase('database');
     }
 }
