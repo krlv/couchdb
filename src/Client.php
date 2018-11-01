@@ -69,6 +69,10 @@ class Client
      * @link http://docs.couchdb.org/en/stable/api/server/common.html#all-dbs
      *
      * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
      */
     public function getAllDatabases(): array
     {
@@ -81,6 +85,10 @@ class Client
      *
      * @param string $db Database name
      * @return bool
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
      */
     public function isDatabaseExists(string $db): bool
     {
@@ -98,6 +106,11 @@ class Client
      *
      * @param string $db Database name
      * @return array
+     *
+     * @throws NotFoundException
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
      */
     public function getDatabase(string $db): array
     {
@@ -120,7 +133,8 @@ class Client
     {
         try {
             $response = $this->http->request($method, $uri, $options);
-            return json_decode($response->getBody(), true);
+            $response = (string) $response->getBody();
+            return !empty($response) ? json_decode($response, true) : [];
         } catch (ClientException $e) {
             switch ($e->getCode()) {
                 case 400:
