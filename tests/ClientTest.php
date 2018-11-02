@@ -6,6 +6,7 @@ use Couchdb\Test\Traits\VisibilityTrait;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 
@@ -15,9 +16,12 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     public function testConstructorWithCookieAuth()
     {
+        $container = [];
+
         $handler = MockHandler::createWithMiddleware([
             new Response(200, ['Set-Cookie' => 'auth cookie']),
         ]);
+        $handler->push(Middleware::history($container));
 
         $config = [
             'handler' => $handler,
@@ -31,13 +35,20 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         /** @var \GuzzleHttp\Client $http */
         $http = $this->getPrivateProperty($client, 'http');
 
-        /** @var \GuzzleHttp\Psr7\Uri $uri */
-        $uri = $http->getConfig('base_uri');
-
         /** @var array $headers */
         $headers = $http->getConfig('headers');
 
-        $this->assertEquals('http://host:5984', (string) $uri);
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://host:5984/_session', (string) $request->getUri());
+        $this->assertEquals('CouchDB PHP consumer', $request->getHeaderLine('User-Agent'));
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"name":"user","password":"pass"}', (string) $request->getBody());
+
+        $this->assertEquals('http://host:5984', (string) $http->getConfig('base_uri'));
 
         $this->assertEquals([
             'User-Agent'   => 'CouchDB PHP consumer',
@@ -75,19 +86,26 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     public function testGetAllDatabases()
     {
+        $container = [];
+
         $handler = MockHandler::createWithMiddleware([
             new Response(200, [], '["_global_changes", "_metadata", "_replicator", "_users"]'),
         ]);
+        $handler->push(Middleware::history($container));
 
         $client    = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $databases = $client->getAllDatabases();
 
-        $this::assertEquals([
-            '_global_changes',
-            '_metadata',
-            '_replicator',
-            '_users',
-        ], $databases);
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/_all_dbs', (string) $request->getUri());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('', (string) $request->getBody());
+
+        $this->assertEquals(['_global_changes', '_metadata', '_replicator', '_users'], $databases);
     }
 
     /**
@@ -101,6 +119,24 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
         $handler = MockHandler::createWithMiddleware([
             new ConnectException($message, $request),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getAllDatabases();
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `GET http://user:***@host:5984/_all_dbs` resulted in a `500 Internal Server Error`
+     */
+    public function testGetAllDatabasesServerException()
+    {
+        $message  = 'Server error: `GET http://user:***@host:5984/_all_dbs` resulted in a `500 Internal Server Error`';
+        $request  = new Request('GET', '/_all_dbs');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
         ]);
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
@@ -127,12 +163,25 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     public function testIsDatabaseExists()
     {
+        $container = [];
+
         $handler = MockHandler::createWithMiddleware([
             new Response(200),
         ]);
+        $handler->push(Middleware::history($container));
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
-        $this::assertTrue($client->isDatabaseExists('database'));
+
+        $this->assertTrue($client->isDatabaseExists('database'));
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('HEAD', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
 
     public function testIsDatabaseNotExists()
@@ -146,7 +195,8 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         ]);
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
-        $this::assertFalse($client->isDatabaseExists('database'));
+
+        $this->assertFalse($client->isDatabaseExists('database'));
     }
 
     /**
@@ -204,14 +254,26 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     public function testGetDatabase()
     {
+        $container = [];
+
         $handler = MockHandler::createWithMiddleware([
             new Response(200, [], '{"db_name":"database"}'),
         ]);
+        $handler->push(Middleware::history($container));
 
         $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $database = $client->getDatabase('database');
 
-        $this::assertEquals(['db_name' => 'database'], $database);
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals(['db_name' => 'database'], $database);
     }
 
     /**
@@ -283,5 +345,91 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $client->getDatabase('database');
+    }
+
+    public function testCreateDocument()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201, [], '{"db_name":"database"}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $document = $client->createDocument('database', ['key' => 'value']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"key":"value"}', (string) $request->getBody());
+
+        $this->assertEquals(['db_name' => 'database'], $document);
+    }
+
+    public function testCreateDocumentAccepted()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201, [], '{"db_name":"database"}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $document = $client->createDocument('database', ['key' => 'value']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"key":"value"}', (string) $request->getBody());
+
+        $this->assertEquals(['db_name' => 'database'], $document);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\NotFoundException
+     * @expectedExceptionMessage Client error: `POST http://user:***@host:5984/database` resulted in a `404 Object Not Found`
+     */
+    public function testCreateDocumentDatabaseNotFound()
+    {
+        $message  = 'Client error: `POST http://user:***@host:5984/database` resulted in a `404 Object Not Found`';
+        $request  = new Request('POST', '/database');
+        $response = new Response(404, [], '{"error":"not_found","reason":"Database does not exist."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->createDocument('database', ['key' => 'value']);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\ConflictException
+     * @expectedExceptionMessage Client error: `POST http://user:***@host:5984/database` resulted in a `409 Conflict`
+     */
+    public function testCreateDocumentConflict()
+    {
+        $message  = 'Client error: `POST http://user:***@host:5984/database` resulted in a `409 Conflict`';
+        $request  = new Request('POST', '/database');
+        $response = new Response(409, [], '{"error":"conflict","reason":"Document update conflict."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->createDocument('database', ['key' => 'value']);
     }
 }

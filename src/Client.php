@@ -118,6 +118,28 @@ class Client
     }
 
     /**
+     * Create new document for the database
+     * @link http://docs.couchdb.org/en/2.0.0/api/database/common.html#post--db
+     *
+     * @param string $db
+     * @param array $doc
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws ConflictException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function createDocument(string $db, array $doc, array $params = [])
+    {
+        $params['json'] = $doc;
+        return $this->request('POST', sprintf('/%s', $db), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
