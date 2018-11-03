@@ -126,11 +126,35 @@ class Client
      * @param array $params Database parameters (eg. shards, replicas)
      *
      * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws DuplicateException
+     * @throws RuntimeException
+     * @throws ConnectionException
      */
     public function createDatabase(string $db, array $params = []): array
     {
-        $params = ['query' => $params];
+        $params = !empty($params) ? ['query' => $params] : [];
         return $this->request('PUT', sprintf('/%s', $db), $params);
+    }
+
+    /**
+     * Delete an existing database
+     * @link http://docs.couchdb.org/en/stable/api/database/common.html#delete--db
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function deleteDatabase(string $db): array
+    {
+        return $this->request('DELETE', sprintf('/%s', $db));
     }
 
     /**

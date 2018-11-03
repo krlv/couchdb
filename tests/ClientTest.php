@@ -455,6 +455,48 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $client->createDatabase('database');
     }
 
+    public function testDeleteDatabase()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"ok":true}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $database = $client->deleteDatabase('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('DELETE', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals(['ok' => true], $database);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\NotFoundException
+     * @expectedExceptionMessage Client error: `DELETE http://user:***@host:5984/database` resulted in a `404 Object Not Found`
+     */
+    public function testDeleteDatabaseNotFound()
+    {
+        $message  = 'Client error: `DELETE http://user:***@host:5984/database` resulted in a `404 Object Not Found`';
+        $request  = new Request('DELETE', '/database');
+        $response = new Response(404, [], '{"error":"not_found","reason":"Database does not exist."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->deleteDatabase('database');
+    }
+
     public function testCreateDocument()
     {
         $container = [];
