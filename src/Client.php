@@ -3,6 +3,7 @@ namespace Couchdb;
 
 use Couchdb\Exception\ConflictException;
 use Couchdb\Exception\ConnectionException;
+use Couchdb\Exception\DuplicateException;
 use Couchdb\Exception\InvalidArgumentException;
 use Couchdb\Exception\NotFoundException;
 use Couchdb\Exception\RuntimeException;
@@ -80,7 +81,7 @@ class Client
     }
 
     /**
-     * Check if database exists
+     * Checks if database exists
      * @link http://docs.couchdb.org/en/stable/api/database/common.html#head--db
      *
      * @param string $db Database name
@@ -118,8 +119,23 @@ class Client
     }
 
     /**
-     * Create new document for the database
-     * @link http://docs.couchdb.org/en/2.0.0/api/database/common.html#post--db
+     * Creates a new database
+     * @link https://docs.couchdb.org/en/stable/api/database/common.html#put--db
+     *
+     * @param string $db Database name
+     * @param array $params Database parameters (eg. shards, replicas)
+     *
+     * @return array
+     */
+    public function createDatabase(string $db, array $params = []): array
+    {
+        $params = ['query' => $params];
+        return $this->request('PUT', sprintf('/%s', $db), $params);
+    }
+
+    /**
+     * Creates new document for the database
+     * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
      * @param string $db
      * @param array $doc
@@ -181,7 +197,7 @@ class Client
 
                 case 412:
                     // database already exists
-                    throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e);
+                    throw new DuplicateException($e->getMessage(), $e->getCode(), $e);
                     break;
 
                 case 417:

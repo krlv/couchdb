@@ -347,6 +347,114 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $client->getDatabase('database');
     }
 
+    public function testCreateDatabase()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201, [], '{"ok":true}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $database = $client->createDatabase('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals(['ok' => true], $database);
+    }
+
+    public function testCreateDatabaseWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201, [], '{"ok":true}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $database = $client->createDatabase('database', ['q' => 8, 'n' => 3]);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database?q=8&n=3', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals(['ok' => true], $database);
+    }
+
+    public function testCreateDatabaseAccepted()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(202, [], '{"ok":true}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client   = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $database = $client->createDatabase('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals(['ok' => true], $database);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\InvalidArgumentException
+     * @expectedExceptionMessage Client error: `PUT http://user:***@host:5984/DATABASE` resulted in a `400 Bad Request`
+     */
+    public function testCreateDatabaseInvalidName()
+    {
+        $message  = 'Client error: `PUT http://user:***@host:5984/DATABASE` resulted in a `400 Bad Request`';
+        $request  = new Request('PUT', '/DATABASE');
+        $response = new Response(400, [], '{"error":"illegal_database_name","reason":"Name: \'DATABASE\'."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->createDatabase('DATABASE');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\DuplicateException
+     * @expectedExceptionMessage Client error: `PUT http://user:***@host:5984/database` resulted in a `412 Precondition Failed`
+     */
+    public function testCreateDatabaseAlreadyExists()
+    {
+        $message  = 'Client error: `PUT http://user:***@host:5984/database` resulted in a `412 Precondition Failed`';
+        $request  = new Request('PUT', '/database');
+        $response = new Response(412, [], '{"error":"file_exists","reason":"The database could not be created, the file already exists."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->createDatabase('database');
+    }
+
     public function testCreateDocument()
     {
         $container = [];
