@@ -158,6 +158,25 @@ class Client
     }
 
     /**
+     * Returns all the documents from the database
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#get--db-_all_docs
+     *
+     * @param string $db
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getAllDocuments(string $db, array $params = []): array
+    {
+        $params = !empty($params) ? ['query' => $params] : [];
+        return $this->request('GET', sprintf('/%s/_all_docs', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *

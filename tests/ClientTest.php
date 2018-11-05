@@ -497,6 +497,83 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $client->deleteDatabase('database');
     }
 
+    public function testGetAllDocuments()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"total_rows":1,"offset":0,"rows":[{"id":"366523ee63ac9873f90e0da48b9598bd","key":"366523ee63ac9873f90e0da48b9598bd","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"}}]}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $docs   = $client->getAllDocuments('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_all_docs', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals([
+            'total_rows' => 1,
+            'offset' => 0,
+            'rows' => [
+                [
+                    'id'    => '366523ee63ac9873f90e0da48b9598bd',
+                    'key'   => '366523ee63ac9873f90e0da48b9598bd',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                ],
+            ],
+        ], $docs);
+    }
+
+    public function testGetAllDocumentsWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"total_rows":1,"offset":0,"rows":[{"id":"366523ee63ac9873f90e0da48b9598bd","key":"366523ee63ac9873f90e0da48b9598bd","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"},"doc":{"_id":"366523ee63ac9873f90e0da48b9598bd","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"value"}}]}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $docs   = $client->getAllDocuments('database', ['include_docs' => 'true']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_all_docs?include_docs=true', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals([
+            'total_rows' => 1,
+            'offset' => 0,
+            'rows' => [
+                [
+                    'id'    => '366523ee63ac9873f90e0da48b9598bd',
+                    'key'   => '366523ee63ac9873f90e0da48b9598bd',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                    'doc' => [
+                        '_id'  => '366523ee63ac9873f90e0da48b9598bd',
+                        '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                        'key'  => 'value',
+                    ],
+                ],
+            ],
+        ], $docs);
+    }
+
     public function testCreateDocument()
     {
         $container = [];
