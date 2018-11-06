@@ -177,6 +177,27 @@ class Client
     }
 
     /**
+     * Returns certain rows from the _all_docs view of the database
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#post--db-_all_docs
+     *
+     * @param string $db
+     * @param array $keys
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getAllDocumentsByKeys(string $db, array $keys, array $params = []): array
+    {
+        $params = !empty($params) ? ['query' => $params] : [];
+        $params['json'] = ['keys' => $keys];
+        return $this->request('POST', sprintf('/%s/_all_docs', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *

@@ -574,6 +574,112 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         ], $docs);
     }
 
+    public function testGetAllDocumentsByKeys()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"total_rows":2,"rows":[{"id":"366523ee63ac9873f90e0da48bf3a4d3","key":"366523ee63ac9873f90e0da48bf3a4d3","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"}},{"id":"366523ee63ac9873f90e0da48bf3bbb5","key":"366523ee63ac9873f90e0da48bf3bbb5","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"}}]}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $keys = [
+            '366523ee63ac9873f90e0da48bf3a4d3',
+            '366523ee63ac9873f90e0da48bf3bbb5',
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $docs   = $client->getAllDocumentsByKeys('database', $keys);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_all_docs', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"keys":["366523ee63ac9873f90e0da48bf3a4d3","366523ee63ac9873f90e0da48bf3bbb5"]}', (string) $request->getBody());
+
+        $this->assertEquals([
+            'total_rows' => 2,
+            'rows' => [
+                [
+                    'id'    => '366523ee63ac9873f90e0da48bf3a4d3',
+                    'key'   => '366523ee63ac9873f90e0da48bf3a4d3',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                ],
+                [
+                    'id'    => '366523ee63ac9873f90e0da48bf3bbb5',
+                    'key'   => '366523ee63ac9873f90e0da48bf3bbb5',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                ],
+            ],
+        ], $docs);
+    }
+
+    public function testGetAllDocumentsByKeysWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"total_rows":2,"rows":[{"id":"366523ee63ac9873f90e0da48bf3a4d3","key":"366523ee63ac9873f90e0da48bf3a4d3","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"},"doc":{"_id":"366523ee63ac9873f90e0da48bf3a4d3","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"value"}},{"id":"366523ee63ac9873f90e0da48bf3bbb5","key":"366523ee63ac9873f90e0da48bf3bbb5","value":{"rev":"1-59414e77c768bc202142ac82c2f129de"},"doc":{"_id":"366523ee63ac9873f90e0da48bf3bbb5","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"value"}}]}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $keys = [
+            '366523ee63ac9873f90e0da48bf3a4d3',
+            '366523ee63ac9873f90e0da48bf3bbb5',
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $docs   = $client->getAllDocumentsByKeys('database', $keys, ['include_docs' => 'true']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_all_docs?include_docs=true', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"keys":["366523ee63ac9873f90e0da48bf3a4d3","366523ee63ac9873f90e0da48bf3bbb5"]}', (string) $request->getBody());
+
+        $this->assertEquals([
+            'total_rows' => 2,
+            'rows' => [
+                [
+                    'id'    => '366523ee63ac9873f90e0da48bf3a4d3',
+                    'key'   => '366523ee63ac9873f90e0da48bf3a4d3',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                    'doc' => [
+                        '_id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                        '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                        'key'  => 'value',
+                    ],
+                ],
+                [
+                    'id'    => '366523ee63ac9873f90e0da48bf3bbb5',
+                    'key'   => '366523ee63ac9873f90e0da48bf3bbb5',
+                    'value' => [
+                        'rev' => '1-59414e77c768bc202142ac82c2f129de',
+                    ],
+                    'doc' => [
+                        '_id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                        '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                        'key'  => 'value',
+                    ],
+                ],
+            ],
+        ], $docs);
+    }
+
     public function testCreateDocument()
     {
         $container = [];
