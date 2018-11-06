@@ -6,6 +6,7 @@ use Couchdb\Exception\ConnectionException;
 use Couchdb\Exception\DuplicateException;
 use Couchdb\Exception\InvalidArgumentException;
 use Couchdb\Exception\NotFoundException;
+use Couchdb\Exception\NotImplementedException;
 use Couchdb\Exception\RuntimeException;
 use Couchdb\Exception\UnauthorizedException;
 use GuzzleHttp\Exception\ClientException;
@@ -195,6 +196,45 @@ class Client
         $params = !empty($params) ? ['query' => $params] : [];
         $params['json'] = ['keys' => $keys];
         return $this->request('POST', sprintf('/%s/_all_docs', $db), $params);
+    }
+
+    /**
+     * Returns a JSON structure of all of the design documents in a given database
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#db-design-docs
+     *
+     * @param string $db
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     * @throws NotImplementedException
+     */
+    public function getDesignDocuments(string $db, array $params = []): array
+    {
+        throw new NotImplementedException;
+    }
+
+    /**
+     * Returns multiple design documents in a single request
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#post--db-_design_docs
+     *
+     * @param string $db
+     * @param array $keys
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     * @throws NotImplementedException
+     */
+    public function getDesignDocumentsByKeys(string $db, array $keys, array $params = []): array
+    {
+        throw new NotImplementedException;
     }
 
     /**
