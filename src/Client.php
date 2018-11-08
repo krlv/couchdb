@@ -7,6 +7,7 @@ use Couchdb\Exception\DuplicateException;
 use Couchdb\Exception\InvalidArgumentException;
 use Couchdb\Exception\NotFoundException;
 use Couchdb\Exception\NotImplementedException;
+use Couchdb\Exception\RejectedException;
 use Couchdb\Exception\RuntimeException;
 use Couchdb\Exception\UnauthorizedException;
 use GuzzleHttp\Exception\ClientException;
@@ -233,6 +234,27 @@ class Client
      * @throws NotImplementedException
      */
     public function getDesignDocumentsByKeys(string $db, array $keys, array $params = []): array
+    {
+        throw new NotImplementedException;
+    }
+
+    /**
+     * Inserts or update multiple documents in to the database
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#db-bulk-get
+     *
+     * @param string $db
+     * @param array $docs
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     * @throws NotImplementedException
+     */
+    public function getBulkDocuments(string $db, array $docs, array $params = []): array
     {
         throw new NotImplementedException;
     }

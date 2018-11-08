@@ -698,6 +698,15 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $client->getDesignDocumentsByKeys('database', ['keys' => ['366523ee63ac9873f90e0da48bf3a4d3', '366523ee63ac9873f90e0da48bf3bbb5']]);
     }
 
+    /**
+     * @expectedException \Couchdb\Exception\NotImplementedException
+     */
+    public function testGetBulkDocuments()
+    {
+        $client = new Client('host', 5984, 'user', 'pass');
+        $client->getBulkDocuments('database', ['docs' => ['id' => '366523ee63ac9873f90e0da48bf3a4d3'], ['id' => '366523ee63ac9873f90e0da48bf3bbb5']]);
+    }
+
     public function testCreateDocument()
     {
         $container = [];
