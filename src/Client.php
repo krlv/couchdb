@@ -287,6 +287,27 @@ class Client
     }
 
     /**
+     * Find documents within a given database
+     * @link http://docs.couchdb.org/en/stable/api/database/find.html#db-find
+     *
+     * @param string $db
+     * @param array $query
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function findDocuments(string $db, array $query): array
+    {
+        $params = ['json' => $query];
+        return $this->request('POST', sprintf('/%s/_find', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
