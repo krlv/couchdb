@@ -5,6 +5,7 @@ use Couchdb\Client;
 use Couchdb\Test\Traits\VisibilityTrait;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
@@ -705,6 +706,199 @@ class ClientTest extends \PHPUnit\Framework\TestCase
     {
         $client = new Client('host', 5984, 'user', 'pass');
         $client->getBulkDocuments('database', ['docs' => ['id' => '366523ee63ac9873f90e0da48bf3a4d3'], ['id' => '366523ee63ac9873f90e0da48bf3bbb5']]);
+    }
+
+    public function testBulkDocumentsInsert()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '[{"ok":true,"id":"366523ee63ac9873f90e0da48bf3a4d3","rev":"1-59414e77c768bc202142ac82c2f129de"},{"ok":true,"id":"366523ee63ac9873f90e0da48bf3bbb5","rev":"1-59414e77c768bc202142ac82c2f129de"}]'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $docs = [
+            ['key' => 'value'],
+            ['key' => 'value'],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $bulk   = $client->bulkDocuments('database', $docs);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_bulk_docs', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"docs":[{"key":"value"},{"key":"value"}]}', (string) $request->getBody());
+
+        $this->assertEquals([
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                'rev' => '1-59414e77c768bc202142ac82c2f129de',
+            ],
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                'rev' => '1-59414e77c768bc202142ac82c2f129de',
+            ],
+        ], $bulk);
+    }
+
+    public function testBulkDocumentsUpdate()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '[{"ok":true,"id":"366523ee63ac9873f90e0da48bf3a4d3","rev":"2-2bff94179917f1dec7cd7f0209066fb8"},{"ok":true,"id":"366523ee63ac9873f90e0da48bf3bbb5","rev":"2-2bff94179917f1dec7cd7f0209066fb8"}]'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $docs = [
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => 'new value',
+            ],
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => 'new value',
+            ],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $bulk   = $client->bulkDocuments('database', $docs);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_bulk_docs', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"docs":[{"_id":"366523ee63ac9873f90e0da48bf3a4d3","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"new value"},{"_id":"366523ee63ac9873f90e0da48bf3bbb5","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"new value"}]}', (string) $request->getBody());
+
+        $this->assertEquals([
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                'rev' => '2-2bff94179917f1dec7cd7f0209066fb8',
+            ],
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                'rev' => '2-2bff94179917f1dec7cd7f0209066fb8',
+            ],
+        ], $bulk);
+    }
+
+    public function testBulkDocumentsUpdateNoEdits()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '[{"ok":true,"id":"366523ee63ac9873f90e0da48bf3a4d3","rev":"1-59414e77c768bc202142ac82c2f129de"},{"ok":true,"id":"366523ee63ac9873f90e0da48bf3bbb5","rev":"1-59414e77c768bc202142ac82c2f129de"}]'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $docs = [
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => 'new value',
+            ],
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => 'new value',
+            ],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $bulk   = $client->bulkDocuments('database', $docs, false);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_bulk_docs', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"docs":[{"_id":"366523ee63ac9873f90e0da48bf3a4d3","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"new value"},{"_id":"366523ee63ac9873f90e0da48bf3bbb5","_rev":"1-59414e77c768bc202142ac82c2f129de","key":"new value"}],"new_edits":false}', (string) $request->getBody());
+
+        $this->assertEquals([
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                'rev' => '1-59414e77c768bc202142ac82c2f129de',
+            ],
+            [
+                'ok'  => true,
+                'id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                'rev' => '1-59414e77c768bc202142ac82c2f129de',
+            ],
+        ], $bulk);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RejectedException
+     * @expectedExceptionMessage Client error: `POST http://user:***@host:5984/database/_bulk_docs` resulted in a `417 Expectation Failed`
+     */
+    public function testBulkDocumentsRejected()
+    {
+        $message  = 'Client error: `POST http://user:***@host:5984/database/_bulk_docs` resulted in a `417 Expectation Failed`';
+        $request  = new Request('POST', '/database/_bulk_docs');
+        $response = new Response(417, [], '[{"ok":true,"id":"366523ee63ac9873f90e0da48bf3a4d3","rev":"2-2bff94179917f1dec7cd7f0209066fb8"},{"error":"forbidden","id":"366523ee63ac9873f90e0da48bf3bbb5","reason":"invalid key value","rev":"1-59414e77c768bc202142ac82c2f129de"}]');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $docs = [
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3a4d3',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => 'new value',
+            ],
+            [
+                '_id'  => '366523ee63ac9873f90e0da48bf3bbb5',
+                '_rev' => '1-59414e77c768bc202142ac82c2f129de',
+                'key'  => '',
+            ],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->bulkDocuments('database', $docs);
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `POST http://user:***@host:5984/database/_bulk_docs` resulted in a `500 Internal Server Error`
+     */
+    public function testBulkDocumentsMalformed()
+    {
+        $message  = 'Server error: `POST http://user:***@host:5984/database/_bulk_docs` resulted in a `500 Internal Server Error`';
+        $request  = new Request('POST', '/database/_bulk_docs');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ServerException($message, $request, $response),
+        ]);
+
+        $docs = [
+            ['key' => 'value'],
+            ['key' => 'value'],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->bulkDocuments('database', $docs);
     }
 
     public function testCreateDocument()

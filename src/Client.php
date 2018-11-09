@@ -260,6 +260,33 @@ class Client
     }
 
     /**
+     * Inserts or update multiple documents in to the database
+     * @link http://docs.couchdb.org/en/stable/api/database/bulk-api.html#post--db-_bulk_docs
+     *
+     * @param string $db
+     * @param array $docs
+     * @param bool $isNewEdits
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws RejectedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function bulkDocuments(string $db, array $docs, bool $isNewEdits = true): array
+    {
+        $params = ['json' => ['docs' => $docs]];
+
+        if (!$isNewEdits) {
+            $params['json']['new_edits'] = $isNewEdits;
+        }
+
+        return $this->request('POST', sprintf('/%s/_bulk_docs', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
@@ -328,7 +355,7 @@ class Client
 
                 case 417:
                     // documents rejected
-                    throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e);
+                    throw new RejectedException($e->getMessage(), $e->getCode(), $e);
                     break;
 
                 default:
