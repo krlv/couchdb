@@ -329,6 +329,24 @@ class Client
     }
 
     /**
+     * List all indexes in the database
+     * @link http://docs.couchdb.org/en/stable/api/database/find.html#get--db-_index
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getIndexes(string $db): array
+    {
+        return $this->request('GET', sprintf('/%s/_index', $db));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
