@@ -932,6 +932,37 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('{"selector":{"key":"value"},"limit":100,"skip":0}', (string) $request->getBody());
     }
 
+    public function testCreateIndex()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $index = [
+            'index' => [
+                'fields' => ['key'],
+            ],
+            'ddoc' => 'docs',
+            'name' => 'key',
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->createIndex('database', $index);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_index', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"index":{"fields":["key"]},"ddoc":"docs","name":"key"}', (string) $request->getBody());
+    }
+
     public function testCreateDocument()
     {
         $container = [];
