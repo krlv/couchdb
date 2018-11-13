@@ -287,7 +287,7 @@ class Client
     }
 
     /**
-     * Find documents within a given database
+     * Finds documents within a given database
      * @link http://docs.couchdb.org/en/stable/api/database/find.html#db-find
      *
      * @param string $db
@@ -308,7 +308,7 @@ class Client
     }
 
     /**
-     * Create a new index
+     * Creates a new index
      * @link http://docs.couchdb.org/en/stable/api/database/find.html#post--db-_index
      *
      * @param string $db
@@ -347,6 +347,27 @@ class Client
     }
 
     /**
+     * Deletes an index
+     * @link http://docs.couchdb.org/en/stable/api/database/find.html#delete--db-_index-designdoc-json-name
+     *
+     * @param string $db
+     * @param string $ddoc
+     * @param string $index
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function deleteIndex(string $db, string $ddoc, string $index): array
+    {
+        return $this->request('DELETE', sprintf('/%s/_index/%s/json/%s', $db, $ddoc, $index));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
@@ -362,7 +383,7 @@ class Client
      * @throws RuntimeException
      * @throws ConnectionException
      */
-    public function createDocument(string $db, array $doc, array $params = [])
+    public function createDocument(string $db, array $doc, array $params = []): array
     {
         $params['json'] = $doc;
         return $this->request('POST', sprintf('/%s', $db), $params);
