@@ -389,6 +389,24 @@ class Client
     }
 
     /**
+     * List database shards
+     * @link https://docs.couchdb.org/en/stable/api/database/shard.html#db-shards
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getShards(string $db): array
+    {
+        return $this->request('GET', sprintf('/%s/_shards', $db));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
