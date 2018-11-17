@@ -407,6 +407,26 @@ class Client
     }
 
     /**
+     * Returns information about the specific shard into which a given document has been stored
+     * @link https://docs.couchdb.org/en/stable/api/database/shard.html#db-shards-doc
+     *
+     * @param string $db
+     * @param string $docid
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getShardsByDocument(string $db, string $docid): array
+    {
+        return $this->request('GET', sprintf('/%s/_shards/%s', $db, $docid));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
