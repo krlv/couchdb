@@ -389,7 +389,7 @@ class Client
     }
 
     /**
-     * List database shards
+     * Returens a list of database shards
      * @link https://docs.couchdb.org/en/stable/api/database/shard.html#db-shards
      *
      * @param string $db
@@ -401,7 +401,7 @@ class Client
      * @throws RuntimeException
      * @throws ConnectionException
      */
-    public function getShards(string $db): array
+    public function getDatabaseShards(string $db): array
     {
         return $this->request('GET', sprintf('/%s/_shards', $db));
     }
@@ -421,7 +421,7 @@ class Client
      * @throws RuntimeException
      * @throws ConnectionException
      */
-    public function getShardsByDocument(string $db, string $docid): array
+    public function getDocumentShards(string $db, string $docid): array
     {
         return $this->request('GET', sprintf('/%s/_shards/%s', $db, $docid));
     }

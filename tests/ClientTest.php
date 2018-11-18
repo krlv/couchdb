@@ -1048,7 +1048,7 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $handler->push(Middleware::history($container));
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
-        $client->getShards('database');
+        $client->getDatabaseShards('database');
 
         $this->assertNotEmpty($container[0]);
 
@@ -1070,7 +1070,7 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $handler->push(Middleware::history($container));
 
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
-        $client->getShardsByDocument('database', 'docid');
+        $client->getDocumentShards('database', 'docid');
 
         $this->assertNotEmpty($container[0]);
 
