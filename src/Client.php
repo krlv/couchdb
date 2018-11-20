@@ -427,6 +427,26 @@ class Client
     }
 
     /**
+     * Returns a list of changes made to documents in the database
+     * @link https://docs.couchdb.org/en/stable/api/database/changes.html#get--db-_changes
+     *
+     * @param string $db
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getDatabaseChanges(string $db, array $params = []): array
+    {
+        $params = !empty($params) ? ['query' => $params] : [];
+        return $this->request('GET', sprintf('/%s/_changes', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *

@@ -1082,6 +1082,105 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
 
+    public function testGetDatabaseChanges()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"last_seq": "5-g1AAAAIreJyVkEsKwjAURZ-toI5cgq5A0sQ0OrI70XyppcaRY92J7kR3ojupaSPUUgotgRd4yTlwbw4A0zRUMLdnpaMkwmyF3Ily9xBwEIuiKLI05KOTW0wkV4rruP29UyGWbordzwKVxWBNOGMKZhertDlarbr5pOT3DV4gudUC9-MPJX9tpEAYx4TQASns2E24ucuJ7rXJSL1BbEgf3vTwpmedCZkYa7Pulck7Xt7x_usFU2aIHOD4eEfVTVA5KMGUkqhNZV-8_o5i","pending": 0,"results": [{"changes": [{"rev": "2-7051cbe5c8faecd085a3fa619e6e6337"}],"id": "6478c2ae800dfc387396d14e1fc39626","seq": "3-g1AAAAG3eJzLYWBg4MhgTmHgz8tPSTV0MDQy1zMAQsMcoARTIkOS_P___7MSGXAqSVIAkkn2IFUZzIkMuUAee5pRqnGiuXkKA2dpXkpqWmZeagpu_Q4g_fGEbEkAqaqH2sIItsXAyMjM2NgUUwdOU_JYgCRDA5ACGjQfn30QlQsgKvcjfGaQZmaUmmZClM8gZhyAmHGfsG0PICrBPmQC22ZqbGRqamyIqSsLAAArcXo"},{"changes": [{"rev": "3-7379b9e515b161226c6559d90c4dc49f"}],"deleted": true,"id": "5bbc9ca465f1b0fcd62362168a7c8831","seq": "4-g1AAAAHXeJzLYWBg4MhgTmHgz8tPSTV0MDQy1zMAQsMcoARTIkOS_P___7MymBMZc4EC7MmJKSmJqWaYynEakaQAJJPsoaYwgE1JM0o1TjQ3T2HgLM1LSU3LzEtNwa3fAaQ_HqQ_kQG3qgSQqnoUtxoYGZkZG5uS4NY8FiDJ0ACkgAbNx2cfROUCiMr9CJ8ZpJkZpaaZEOUziBkHIGbcJ2zbA4hKsA-ZwLaZGhuZmhobYurKAgCz33kh"},{"changes": [{"rev": "6-460637e73a6288cb24d532bf91f32969"},{"rev": "5-eeaa298781f60b7bcae0c91bdedd1b87"}],"id": "729eb57437745e506b333068fff665ae","seq": "5-g1AAAAIReJyVkE0OgjAQRkcwUVceQU9g-mOpruQm2tI2SLCuXOtN9CZ6E70JFmpCCCFCmkyTdt6bfJMDwDQNFcztWWkcY8JXyB2cu49AgFwURZGloRid3MMkEUoJHbXbOxVy6arc_SxQWQzRVHCuYHaxSpuj1aqbj0t-3-AlSrZakn78oeSvjRSIkIhSNiCFHbsKN3c50b02mURvEB-yD296eNOzzoRMRLRZ98rkHS_veGcC_nR-fGe1gaCaxihhjOI2lX0BhniHaA"}]}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client  = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $changes = $client->getDatabaseChanges('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_changes', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals([
+            'last_seq'  => '5-g1AAAAIreJyVkEsKwjAURZ-toI5cgq5A0sQ0OrI70XyppcaRY92J7kR3ojupaSPUUgotgRd4yTlwbw4A0zRUMLdnpaMkwmyF3Ily9xBwEIuiKLI05KOTW0wkV4rruP29UyGWbordzwKVxWBNOGMKZhertDlarbr5pOT3DV4gudUC9-MPJX9tpEAYx4TQASns2E24ucuJ7rXJSL1BbEgf3vTwpmedCZkYa7Pulck7Xt7x_usFU2aIHOD4eEfVTVA5KMGUkqhNZV-8_o5i',
+            'pending'   => 0,
+            'results'   => [
+                [
+                    'changes'   => [
+                        ['rev'  => '2-7051cbe5c8faecd085a3fa619e6e6337'],
+                    ],
+                    'id'        => '6478c2ae800dfc387396d14e1fc39626',
+                    'seq'       => '3-g1AAAAG3eJzLYWBg4MhgTmHgz8tPSTV0MDQy1zMAQsMcoARTIkOS_P___7MSGXAqSVIAkkn2IFUZzIkMuUAee5pRqnGiuXkKA2dpXkpqWmZeagpu_Q4g_fGEbEkAqaqH2sIItsXAyMjM2NgUUwdOU_JYgCRDA5ACGjQfn30QlQsgKvcjfGaQZmaUmmZClM8gZhyAmHGfsG0PICrBPmQC22ZqbGRqamyIqSsLAAArcXo',
+                ],
+                [
+                    'changes'   => [
+                        ['rev'  => '3-7379b9e515b161226c6559d90c4dc49f'],
+                    ],
+                    'deleted'   => true,
+                    'id'        => '5bbc9ca465f1b0fcd62362168a7c8831',
+                    'seq'       => '4-g1AAAAHXeJzLYWBg4MhgTmHgz8tPSTV0MDQy1zMAQsMcoARTIkOS_P___7MymBMZc4EC7MmJKSmJqWaYynEakaQAJJPsoaYwgE1JM0o1TjQ3T2HgLM1LSU3LzEtNwa3fAaQ_HqQ_kQG3qgSQqnoUtxoYGZkZG5uS4NY8FiDJ0ACkgAbNx2cfROUCiMr9CJ8ZpJkZpaaZEOUziBkHIGbcJ2zbA4hKsA-ZwLaZGhuZmhobYurKAgCz33kh',
+                ],
+                [
+                    'changes'   => [
+                        ['rev'  => '6-460637e73a6288cb24d532bf91f32969'],
+                        ['rev'  => '5-eeaa298781f60b7bcae0c91bdedd1b87'],
+                    ],
+                    'id'        => '729eb57437745e506b333068fff665ae',
+                    'seq'       => '5-g1AAAAIReJyVkE0OgjAQRkcwUVceQU9g-mOpruQm2tI2SLCuXOtN9CZ6E70JFmpCCCFCmkyTdt6bfJMDwDQNFcztWWkcY8JXyB2cu49AgFwURZGloRid3MMkEUoJHbXbOxVy6arc_SxQWQzRVHCuYHaxSpuj1aqbj0t-3-AlSrZakn78oeSvjRSIkIhSNiCFHbsKN3c50b02mURvEB-yD296eNOzzoRMRLRZ98rkHS_veGcC_nR-fGe1gaCaxihhjOI2lX0BhniHaA',
+                ],
+              ],
+        ], $changes);
+    }
+
+    public function testGetDatabaseChangesWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"results":[{"seq":"2-g1AAAAITeJyV0EsOgjAQBuBRTNS1B9ATkLa82pXcRFsGgwRxxVpvojfRm-hNsDwSaiJENtOk8_fLTDMAWCQWwio6F1GCKqTEZg61PVs4mW5OJah1WZZpYsnJSV_MfRFIxuXvJz0Uqym10VVtWw1qzRUUieIIyyLH-HDMYxwcR4WVsfuaSAouMKCjJmq1faVdKk3CYDKf6QpXfejwrT_NjPS9ST-6bYlH_IjhH9uazrNxXp0TOzTgnIx03o1j_D4Grkt5bDrpB1cyjcY","id":"1e5a81111a583d78bca3fd2f29940045","changes":[{"rev":"1-59414e77c768bc202142ac82c2f129de"}]},{"seq":"3-g1AAAAIteJyV0EEOwiAQBdDRmqhrD6AnaIDWAit7E4UOpjZaV13rTfQmehO9ScXSREzU1M2QwPDmZ7YAMMoDhEm2r7IcdUpJyCIazkMZbe1jX4Ge1nVd5IHq7ezFMJFcMaE-f_lCsYbSM1v1otWg0WJJkWiBMK5KNOtNafBnHJ0-jWVr9BtDSSGR078StdrqqR3eEmUxNYyTzonKga1wtIdlToWCnztw3WfXfXlNJXOSZAw7TPWdq3NuL8dElAvRJb3v3J3jbQF5HFNhfKd4ALyWlIs","id":"1e5a81111a583d78bca3fd2f29940a4a","changes":[{"rev":"1-59414e77c768bc202142ac82c2f129de"}]}],"last_seq":"3-g1AAAAJHeJyV0EsOgjAQBuAKJuraA-gJSFsKbVdyE22ZEiSIK9Z6E72J3kRvguWRgIka3Mwk0_TLP5MjhOapC2gZH8s4BR0R7FGfeIEn_dw-OgrpVVVVWeqqycEOZqHkigr1-csXijaUXtuqN52GGo1JAlgLQIuyAJPsCwM_4-ioNrad4TSGkkICJ38l6rRdrZ3eEsWMGMrx6ETF1FZ0ts0yl97RiQKB-QiHDpxr69x6Bwc4jCn86dxb59E7xidciDF7DZ1n6wzuA5wxIszQyV43cJu1","pending":0}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $params = [
+            'doc_ids' => json_encode(['1e5a81111a583d78bca3fd2f29940045', '1e5a81111a583d78bca3fd2f29940a4a']),
+            'filter'  => '_doc_ids',
+        ];
+        $client  = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $changes = $client->getDatabaseChanges('database', $params);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_changes?doc_ids=%5B%221e5a81111a583d78bca3fd2f29940045%22%2C%221e5a81111a583d78bca3fd2f29940a4a%22%5D&filter=_doc_ids', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+
+        $this->assertEquals([
+            'results'  => [
+                [
+                    'seq'      => '2-g1AAAAITeJyV0EsOgjAQBuBRTNS1B9ATkLa82pXcRFsGgwRxxVpvojfRm-hNsDwSaiJENtOk8_fLTDMAWCQWwio6F1GCKqTEZg61PVs4mW5OJah1WZZpYsnJSV_MfRFIxuXvJz0Uqym10VVtWw1qzRUUieIIyyLH-HDMYxwcR4WVsfuaSAouMKCjJmq1faVdKk3CYDKf6QpXfejwrT_NjPS9ST-6bYlH_IjhH9uazrNxXp0TOzTgnIx03o1j_D4Grkt5bDrpB1cyjcY',
+                    'id'       => '1e5a81111a583d78bca3fd2f29940045',
+                    'changes'  => [
+                        ['rev' => '1-59414e77c768bc202142ac82c2f129de']
+                    ],
+                ],
+                [
+                    'seq'      => '3-g1AAAAIteJyV0EEOwiAQBdDRmqhrD6AnaIDWAit7E4UOpjZaV13rTfQmehO9ScXSREzU1M2QwPDmZ7YAMMoDhEm2r7IcdUpJyCIazkMZbe1jX4Ge1nVd5IHq7ezFMJFcMaE-f_lCsYbSM1v1otWg0WJJkWiBMK5KNOtNafBnHJ0-jWVr9BtDSSGR078StdrqqR3eEmUxNYyTzonKga1wtIdlToWCnztw3WfXfXlNJXOSZAw7TPWdq3NuL8dElAvRJb3v3J3jbQF5HFNhfKd4ALyWlIs',
+                    'id'       => '1e5a81111a583d78bca3fd2f29940a4a',
+                    'changes'  => [
+                        ['rev' => '1-59414e77c768bc202142ac82c2f129de']
+                    ],
+                ],
+            ],
+            'last_seq' => '3-g1AAAAJHeJyV0EsOgjAQBuAKJuraA-gJSFsKbVdyE22ZEiSIK9Z6E72J3kRvguWRgIka3Mwk0_TLP5MjhOapC2gZH8s4BR0R7FGfeIEn_dw-OgrpVVVVWeqqycEOZqHkigr1-csXijaUXtuqN52GGo1JAlgLQIuyAJPsCwM_4-ioNrad4TSGkkICJ38l6rRdrZ3eEsWMGMrx6ETF1FZ0ts0yl97RiQKB-QiHDpxr69x6Bwc4jCn86dxb59E7xidciDF7DZ1n6wzuA5wxIszQyV43cJu1',
+            'pending'  => 0,
+        ], $changes);
+    }
+
     public function testCreateDocument()
     {
         $container = [];
