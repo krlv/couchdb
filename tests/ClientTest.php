@@ -1181,6 +1181,59 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         ], $changes);
     }
 
+    public function testGetDatabaseChangesByCriteria()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"results":[{"seq":"1-g1AAAAGHeJzLYWBg4MhgTmEQTs4vTc5ISXIwNNAzMjbUM9WzNMkBSjIlMiTJ____PyuRAYcyI7CyJAUgmWRPjEoHkMp4kMoM5kTGXCCPPcnMxMDY0AK7LvymJYBMq8drL8QjeSxAkqEBSAEVzyfkSojqBRDV-4lTfQCi-j5xqh9AVIPcnQUAWt1qKg","id":"1e5a81111a583d78bca3fd2f29940045","changes":[{"rev":"1-59414e77c768bc202142ac82c2f129de"}]},{"seq":"3-g1AAAAIteJyV0FEOgjAMANAKJuq3B9ATkG0MGF9yE2UrBgniF996E72J3kRvgoORgAkS_emStX1tmgPAPLURlupUqhRlRInDXOp4TshznbRikKuqqrLUjidH_THjXAmG3nDLF4o1lFzrKDetBkYLKRIpEBZlgcn-UCQ4bkS1sW0NqzGkz4lLxXDXuLartfPHRirwFYa_bGQOVEx1hIt-NHPNYhidaKpvpvreTSUe8RXDn-9gnIdxnp2TuDQQgvzpvIzTuwIGnFOR9J3sDaXQlIo","id":"1e5a81111a583d78bca3fd2f2994013d","changes":[{"rev":"1-59414e77c768bc202142ac82c2f129de"}]}],"last_seq":"3-g1AAAAJHeJyV0FEOgjAMANApJuq3B9ATkG0MGF9yE2XrCBLEL771JnoTvYneBAcjARMk8NMmbfrSNkMIrRIL0EZeCpmACAm2qUNs1w5YppvzCIltWZZpYkWzsy4sGZOcgts_8oeiNSV2Oop9oyGjBQSw4IDWRQ4qPuUKho2wMg6NMa8N4THsEN4_NawdK-36s5H0PQnBmI3Mg_KFjuimk2burRNzHsWKjL7MOA_jPFsHu9iTFCY6L-O8W0c5xOccT3Q-xun8B3zGCFddJ_0CJfCbuw","pending":0}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $criteria = [
+            'doc_ids' => [
+                '1e5a81111a583d78bca3fd2f2994013d',
+                '1e5a81111a583d78bca3fd2f29940045',
+            ],
+        ];
+        $params   = [
+            'filter' => '_doc_ids',
+        ];
+        $client  = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $changes = $client->getDatabaseChangesByCriteria('database', $criteria, $params);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_changes?filter=_doc_ids', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"doc_ids":["1e5a81111a583d78bca3fd2f2994013d","1e5a81111a583d78bca3fd2f29940045"]}', (string) $request->getBody());
+
+        $this->assertEquals([
+            'results'  => [
+                [
+                    'seq'      => '1-g1AAAAGHeJzLYWBg4MhgTmEQTs4vTc5ISXIwNNAzMjbUM9WzNMkBSjIlMiTJ____PyuRAYcyI7CyJAUgmWRPjEoHkMp4kMoM5kTGXCCPPcnMxMDY0AK7LvymJYBMq8drL8QjeSxAkqEBSAEVzyfkSojqBRDV-4lTfQCi-j5xqh9AVIPcnQUAWt1qKg',
+                    'id'       => '1e5a81111a583d78bca3fd2f29940045',
+                    'changes'  => [
+                        ['rev' => '1-59414e77c768bc202142ac82c2f129de']
+                    ],
+                ],
+                [
+                    'seq'      => '3-g1AAAAIteJyV0FEOgjAMANAKJuq3B9ATkG0MGF9yE2UrBgniF996E72J3kRvgoORgAkS_emStX1tmgPAPLURlupUqhRlRInDXOp4TshznbRikKuqqrLUjidH_THjXAmG3nDLF4o1lFzrKDetBkYLKRIpEBZlgcn-UCQ4bkS1sW0NqzGkz4lLxXDXuLartfPHRirwFYa_bGQOVEx1hIt-NHPNYhidaKpvpvreTSUe8RXDn-9gnIdxnp2TuDQQgvzpvIzTuwIGnFOR9J3sDaXQlIo',
+                    'id'       => '1e5a81111a583d78bca3fd2f2994013d',
+                    'changes'  => [
+                        ['rev' => '1-59414e77c768bc202142ac82c2f129de']
+                    ],
+                ],
+            ],
+            'last_seq' => '3-g1AAAAJHeJyV0FEOgjAMANApJuq3B9ATkG0MGF9yE2XrCBLEL771JnoTvYneBAcjARMk8NMmbfrSNkMIrRIL0EZeCpmACAm2qUNs1w5YppvzCIltWZZpYkWzsy4sGZOcgts_8oeiNSV2Oop9oyGjBQSw4IDWRQ4qPuUKho2wMg6NMa8N4THsEN4_NawdK-36s5H0PQnBmI3Mg_KFjuimk2burRNzHsWKjL7MOA_jPFsHu9iTFCY6L-O8W0c5xOccT3Q-xun8B3zGCFddJ_0CJfCbuw',
+            'pending'  => 0,
+        ], $changes);
+    }
+
     public function testCreateDocument()
     {
         $container = [];

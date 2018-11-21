@@ -447,6 +447,33 @@ class Client
     }
 
     /**
+     * Returns a list of changes made to documents in the database
+     *
+     * This method is widely used with ?filter=_doc_ids query parameter
+     * and allows one to pass a larger list of document IDs to filter.
+     *
+     * @link https://docs.couchdb.org/en/stable/api/database/changes.html#post--db-_changes
+     *
+     * @param string $db
+     * @param array $criteria
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getDatabaseChangesByCriteria(string $db, array $criteria, array $params = []): array
+    {
+        $params = !empty($params)
+            ? ['query' => $params, 'json' => $criteria]
+            : ['json' => $criteria];
+        return $this->request('POST', sprintf('/%s/_changes', $db), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
