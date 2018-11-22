@@ -474,6 +474,24 @@ class Client
     }
 
     /**
+     * Starts compaction of the database
+     * @link https://docs.couchdb.org/en/stable/api/database/compact.html
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function compactDatabase(string $db): array
+    {
+        return $this->request('POST', sprintf('/%s/_compact', $db));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
