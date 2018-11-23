@@ -475,7 +475,7 @@ class Client
 
     /**
      * Starts compaction of the database
-     * @link https://docs.couchdb.org/en/stable/api/database/compact.html
+     * @link https://docs.couchdb.org/en/stable/api/database/compact.html#db-compact
      *
      * @param string $db
      * @return array
@@ -489,6 +489,26 @@ class Client
     public function compactDatabase(string $db): array
     {
         return $this->request('POST', sprintf('/%s/_compact', $db));
+    }
+
+    /**
+     * Starts compaction of the view indexes associated with the specified design document
+     * @link https://docs.couchdb.org/en/stable/api/database/compact.html#db-compact-design-doc
+     *
+     * @param string $db
+     * @param string $ddoc
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function compactDesignDocument(string $db, string $ddoc): array
+    {
+        return $this->request('POST', sprintf('/%s/_compact/%s', $db, $ddoc));
     }
 
     /**
