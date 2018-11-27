@@ -512,6 +512,24 @@ class Client
     }
 
     /**
+     * Commits any recent changes to the specified database to disk
+     * @link https://docs.couchdb.org/en/stable/api/database/compact.html#db-ensure-full-commit
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function ensureFullCommit(string $db): array
+    {
+        return $this->request('POST', sprintf('/%s/_ensure_full_commit', $db));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
