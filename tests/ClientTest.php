@@ -1322,6 +1322,62 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
 
+    public function testGetSecurityInfo()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getSecurityInfo('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_security', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
+    public function testSetSecurityInfo()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $security = [
+            'admins'  => [
+                'names' => ['admin'],
+                'roles' => ['admins'],
+            ],
+            'members' => [
+                'names' => ['user'],
+                'roles' => ['developers'],
+            ],
+        ];
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->setSecurityInfo('database', $security);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_security', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"admins":{"names":["admin"],"roles":["admins"]},"members":{"names":["user"],"roles":["developers"]}}', (string) $request->getBody());
+    }
+
     public function testCreateDocument()
     {
         $container = [];

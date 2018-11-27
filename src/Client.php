@@ -548,6 +548,43 @@ class Client
     }
 
     /**
+     * Returns the current security object from the specified database
+     * @link https://docs.couchdb.org/en/stable/api/database/security.html#get--db-_security
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getSecurityInfo(string $db): array
+    {
+        return $this->request('GET', sprintf('/%s/_security', $db));
+    }
+
+    /**
+     * Sets the special security object for the given database
+     * @link https://docs.couchdb.org/en/stable/api/database/security.html#put--db-_security
+     *
+     * @param string $db
+     * @param array $security
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function setSecurityInfo(string $db, array $security): array
+    {
+        return $this->request('PUT', sprintf('/%s/_security', $db), ['json' => $security]);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
