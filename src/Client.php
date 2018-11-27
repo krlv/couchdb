@@ -530,6 +530,24 @@ class Client
     }
 
     /**
+     * Removes view index files that are no longer required by any design document
+     * @link https://docs.couchdb.org/en/stable/api/database/compact.html#db-view-cleanup
+     *
+     * @param string $db
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function cleanupView(string $db): array
+    {
+        return $this->request('POST', sprintf('/%s/_view_cleanup', $db));
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *

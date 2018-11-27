@@ -1300,6 +1300,28 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
 
+    public function testCleanupView()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200, [], '{"ok":true}'),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->cleanupView('database');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_view_cleanup', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
     public function testCreateDocument()
     {
         $container = [];
