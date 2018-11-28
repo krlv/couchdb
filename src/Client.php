@@ -605,6 +605,51 @@ class Client
     }
 
     /**
+     * Returns the current `purged_infos_limit` (purged documents limit) setting
+     *
+     * `purged_infos_limit` is the maximum number of historical purges
+     * (purged document Ids with their revisions) that can be stored in the database
+     *
+     * @link https://docs.couchdb.org/en/stable/api/database/security.html#get--db-_security
+     *
+     * @param string $db
+     * @return int
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getPurgedLimit(string $db): int
+    {
+        return (int) $this->request('GET', sprintf('/%s/_purged_infos_limit', $db));
+    }
+
+    /**
+     * Sets the maximum number of purges that will be tracked in the database
+     *
+     * `purged_infos_limit` is the maximum number of historical purges
+     * (purged document Ids with their revisions) that can be stored in the database
+     *
+     * @link https://docs.couchdb.org/en/stable/api/database/misc.html#put--db-_purged_infos_limit
+     *
+     * @param string $db
+     * @param int    $limit
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function setPurgedLimit(string $db, int $limit): array
+    {
+        return $this->request('PUT', sprintf('/%s/_purged_infos_limit', $db), ['body' => $limit]);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
