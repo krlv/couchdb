@@ -585,6 +585,26 @@ class Client
     }
 
     /**
+     * Permanently removes the references to documents in the database
+     * @link https://docs.couchdb.org/en/stable/api/database/misc.html#db-purge
+     *
+     * @param string $db
+     * @param array $revs
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function purge(string $db, array $revs): array
+    {
+        return $this->request('POST', sprintf('/%s/_purge', $db), ['json' => $revs]);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
