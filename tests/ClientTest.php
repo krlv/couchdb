@@ -1446,6 +1446,29 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('1000', (string) $request->getBody());
     }
 
+    public function testGetMissedRevisions()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getMissedRevisions('database', ['id' => ['1-rev', '2-rev']]);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/_missing_revs', (string) $request->getUri());
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"id":["1-rev","2-rev"]}', (string) $request->getBody());
+    }
+
     public function testCreateDocument()
     {
         $container = [];
