@@ -670,6 +670,26 @@ class Client
     }
 
     /**
+     * Returns differences between the given revisions ones that are in the database
+     * @link https://docs.couchdb.org/en/stable/api/database/misc.html#post--db-_revs_diff
+     *
+     * @param string $db
+     * @param array $revs
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getRevisionsDiff(string $db, array $revs): array
+    {
+        return $this->request('POST', sprintf('/%s/_revs_diff', $db), ['json' => $revs]);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
