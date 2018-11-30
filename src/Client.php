@@ -690,6 +690,43 @@ class Client
     }
 
     /**
+     * Returns the limit of historical revisions to store for a single document in the database
+     * @link https://docs.couchdb.org/en/stable/api/database/misc.html#get--db-_revs_limit
+     *
+     * @param string $db
+     * @return int
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getRevisionsLimit(string $db): int
+    {
+        return (int) $this->request('GET', sprintf('/%s/_revs_limit', $db));
+    }
+
+    /**
+     * Sets the maximum number of document revisions that will be tracked by the database
+     * @link https://docs.couchdb.org/en/stable/api/database/misc.html#put--db-_revs_limit
+     *
+     * @param string $db
+     * @param int $limit
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function setRevisionsLimit(string $db, int $limit): array
+    {
+        return $this->request('PUT', sprintf('/%s/_revs_limit', $db), ['body' => $limit]);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
