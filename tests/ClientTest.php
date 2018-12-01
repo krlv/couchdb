@@ -1537,6 +1537,97 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('1000', (string) $request->getBody());
     }
 
+    public function testIsDocumentExists()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+
+        $this->assertTrue($client->isDocumentExists('database', 'id'));
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id', (string) $request->getUri());
+        $this->assertEquals('HEAD', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
+    public function testIsDocumentNotExists()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database/id` resulted in a `404 Object Not Found`';
+        $request  = new Request('HEAD', '/database/id');
+        $response = new Response(404);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+
+        $this->assertFalse($client->isDocumentExists('database', 'id'));
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\ConnectionException
+     * @expectedExceptionMessage Failed to connect to host port 5984
+     */
+    public function testIsDocumentExistsCantConnect()
+    {
+        $message = 'Failed to connect to host port 5984';
+        $request = new Request('HEAD', '/database/id');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ConnectException($message, $request),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentExists('database', 'id');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `HEAD http://user:***@host:5984/database/id` resulted in a `500 Internal Server Error`
+     */
+    public function testIsDocumentExistsServerException()
+    {
+        $message  = 'Server error: `HEAD http://user:***@host:5984/database/id` resulted in a `500 Internal Server Error`';
+        $request  = new Request('HEAD', '/database/id');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentExists('database', 'id');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\UnauthorizedException
+     * @expectedExceptionMessage Client error: `HEAD http://user:***@host:5984/database/id` resulted in a `401 Unauthorized`
+     */
+    public function testIsDocumentExistsUnauthorized()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database/id` resulted in a `401 Unauthorized`';
+        $request  = new Request('HEAD', '/database/id');
+        $response = new Response(401, [], '{"error":"unauthorized","reason":"Name or password is incorrect."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentExists('database', 'id');
+    }
+
     public function testCreateDocument()
     {
         $container = [];

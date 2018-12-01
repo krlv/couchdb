@@ -727,6 +727,31 @@ class Client
     }
 
     /**
+     * Checks if the document exists
+     * @link https://docs.couchdb.org/en/stable/api/document/common.html#head--db-docid
+     *
+     * @param string $db
+     * @param string $docid
+     *
+     * @return bool
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function isDocumentExists(string $db, string $docid): bool
+    {
+        try {
+            $this->request('HEAD', sprintf('/%s/%s', $db, $docid));
+        } catch (NotFoundException $exception) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
