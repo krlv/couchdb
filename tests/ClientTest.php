@@ -1650,6 +1650,52 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
 
+    public function testCreateDocumentById()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->updateDocument('database', 'id', ['key' => 'value']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"key":"value"}', (string) $request->getBody());
+    }
+
+    public function testCreateDocumentByIdWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(202),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->updateDocument('database', 'id', ['key' => 'value'], ['batch' => 'ok']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id?batch=ok', (string) $request->getUri());
+        $this->assertEquals('PUT', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('{"key":"value"}', (string) $request->getBody());
+    }
+
     public function testCreateDocument()
     {
         $container = [];

@@ -796,6 +796,32 @@ class Client
     }
 
     /**
+     * Creates a new named document, or creates a new revision of the existing document
+     * @link https://docs.couchdb.org/en/stable/api/document/common.html#put--db-docid
+     *
+     * @param string $db
+     * @param string $docid
+     * @param array $doc
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws ConflictException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function updateDocument(string $db, string $docid, array $doc, array $params = []): array
+    {
+        $params = !empty($params)
+            ? ['json' => $doc, 'query' => $params]
+            : ['json' => $doc];
+        return $this->request('PUT', sprintf('/%s/%s', $db, $docid), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
