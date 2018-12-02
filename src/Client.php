@@ -752,6 +752,28 @@ class Client
     }
 
     /**
+     * Returns document by the specified `$docid` from the specified `$db`
+     * @link https://docs.couchdb.org/en/stable/api/document/common.html#get--db-docid
+     *
+     * @param string $db
+     * @param string $docid
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getDocument(string $db, string $docid, array $params = []): array
+    {
+        $params = !empty($params) ? ['query' => $params] : [];
+        return $this->request('GET', sprintf('/%s/%s', $db, $docid), $params);
+    }
+
+    /**
      * Creates new document for the database
      * @link https://docs.couchdb.org/en/stable/api/database/common.html#post--db
      *
