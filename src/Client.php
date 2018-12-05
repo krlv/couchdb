@@ -872,6 +872,33 @@ class Client
     }
 
     /**
+     * Checks if the attachment exists
+     * @link https://docs.couchdb.org/en/stable/api/document/attachments.html#head--db-docid-attname
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $attname
+     * @param string $rev
+     *
+     * @return bool
+     *
+     * @throws UnauthorizedException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function isDocumentAttachmentExists(string $db, string $docid, string $attname, string $rev = null): bool
+    {
+        try {
+            $params = !empty($rev) ? ['query' => ['rev' => $rev]] : [];
+            $this->request('HEAD', sprintf('/%s/%s/%s', $db, $docid, $attname), $params);
+        } catch (NotFoundException $exception) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method

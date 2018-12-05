@@ -1871,4 +1871,118 @@ public function testCopyDocument()
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
         $this->assertEquals('id_copy', $request->getHeaderLine('Destination'));
     }
+
+    public function testIsDocumentAttachmentExists()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+
+        $this->assertTrue($client->isDocumentAttachmentExists('database', 'id', 'att.json'));
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id/att.json', (string) $request->getUri());
+        $this->assertEquals('HEAD', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
+    public function testIsDocumentAttachmentExistWithRevision()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+
+        $this->assertTrue($client->isDocumentAttachmentExists('database', 'id', 'att.json', '2-rev'));
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id/att.json?rev=2-rev', (string) $request->getUri());
+        $this->assertEquals('HEAD', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
+    public function testIsDocumentAttachmentNotExists()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database/id/att.json` resulted in a `404 Object Not Found`';
+        $request  = new Request('HEAD', '/database/id/att.json');
+        $response = new Response(404);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+
+        $this->assertFalse($client->isDocumentAttachmentExists('database', 'id', 'att.json'));
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\ConnectionException
+     * @expectedExceptionMessage Failed to connect to host port 5984
+     */
+    public function testIsDocumentAttachmentExistsCantConnect()
+    {
+        $message = 'Failed to connect to host port 5984';
+        $request = new Request('HEAD', '/database/id/att.json');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ConnectException($message, $request),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentAttachmentExists('database', 'id', 'att.json');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\RuntimeException
+     * @expectedExceptionMessage Server error: `HEAD http://user:***@host:5984/database/id/att.json` resulted in a `500 Internal Server Error`
+     */
+    public function testIsDocumentAttachmentExistsServerException()
+    {
+        $message  = 'Server error: `HEAD http://user:***@host:5984/database/id/att.json` resulted in a `500 Internal Server Error`';
+        $request  = new Request('HEAD', '/database/id/att.json');
+        $response = new Response(500);
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentAttachmentExists('database', 'id', 'att.json');
+    }
+
+    /**
+     * @expectedException \Couchdb\Exception\UnauthorizedException
+     * @expectedExceptionMessage Client error: `HEAD http://user:***@host:5984/database/id/att.json` resulted in a `401 Unauthorized`
+     */
+    public function testIsDocumentAttachmentExistsUnauthorized()
+    {
+        $message  = 'Client error: `HEAD http://user:***@host:5984/database/id/att.json` resulted in a `401 Unauthorized`';
+        $request  = new Request('HEAD', '/database/id/att.json');
+        $response = new Response(401, [], '{"error":"unauthorized","reason":"Name or password is incorrect."}');
+
+        $handler = MockHandler::createWithMiddleware([
+            new ClientException($message, $request, $response),
+        ]);
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->isDocumentAttachmentExists('database', 'id', 'att.json');
+    }
 }
