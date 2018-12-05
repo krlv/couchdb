@@ -1825,4 +1825,50 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('DELETE', $request->getMethod());
         $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
     }
+
+public function testCopyDocument()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->copyDocument('database', 'id', 'id_copy');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id', (string) $request->getUri());
+        $this->assertEquals('COPY', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('id_copy', $request->getHeaderLine('Destination'));
+    }
+
+    public function testCopyDocumentWithParams()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(201),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->copyDocument('database', 'id', 'id_copy', ['rev' => '1-rev']);
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id?rev=1-rev', (string) $request->getUri());
+        $this->assertEquals('COPY', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+        $this->assertEquals('id_copy', $request->getHeaderLine('Destination'));
+    }
 }

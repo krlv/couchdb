@@ -847,6 +847,31 @@ class Client
     }
 
     /**
+     * Copies the document within the same database
+     * @linkhttps://docs.couchdb.org/en/stable/api/document/common.html#copy--db-docid
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $destination
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws ConflictException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function copyDocument(string $db, string $docid, string $destination, array $params = []): array
+    {
+        $params = !empty($params) ? ['query' => $params] : [];
+        $params['headers'] = ['Destination' => $destination];
+        return $this->request('COPY', sprintf('/%s/%s', $db, $docid), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
