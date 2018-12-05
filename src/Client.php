@@ -899,6 +899,28 @@ class Client
     }
 
     /**
+     * Returns the file attachment associated with the document
+     * @link https://docs.couchdb.org/en/stable/api/document/attachments.html#get--db-docid-attname
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $attname
+     * @param string $rev
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function getDocumentAttachment(string $db, string $docid, string $attname, string $rev = null): array
+    {
+        $params = !empty($rev) ? ['query' => ['rev' => $rev]] : [];
+        return $this->request('GET', sprintf('/%s/%s/%s', $db, $docid, $attname), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method

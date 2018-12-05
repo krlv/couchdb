@@ -1985,4 +1985,48 @@ public function testCopyDocument()
         $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
         $client->isDocumentAttachmentExists('database', 'id', 'att.json');
     }
+
+    public function testGetDocumentAttachment()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDocumentAttachment('database', 'id', 'att.json');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id/att.json', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
+
+    public function testGetDocumentAttachmentWithRevision()
+    {
+        $container = [];
+
+        $handler = MockHandler::createWithMiddleware([
+            new Response(200),
+        ]);
+        $handler->push(Middleware::history($container));
+
+        $client = new Client('host', 5984, 'user', 'pass', Client::AUTH_BASIC, ['handler' => $handler]);
+        $client->getDocumentAttachment('database', 'id', 'att.json', '2-rev');
+
+        $this->assertNotEmpty($container[0]);
+
+        /** @var Request $request */
+        $request = $container[0]['request'];
+
+        $this->assertEquals('http://user:pass@host:5984/database/id/att.json?rev=2-rev', (string) $request->getUri());
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('application/json', $request->getHeaderLine('Content-Type'));
+    }
 }
