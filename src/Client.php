@@ -822,6 +822,31 @@ class Client
     }
 
     /**
+     * Marks the specified document as deleted
+     * @link https://docs.couchdb.org/en/stable/api/document/common.html#delete--db-docid
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $rev
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws InvalidArgumentException
+     * @throws NotFoundException
+     * @throws ConflictException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function deleteDocument(string $db, string $docid, string $rev, array $params = []): array
+    {
+        $params = array_merge($params, ['rev' => $rev]);
+        $params = ['query' => $params];
+        return $this->request('DELETE', sprintf('/%s/%s', $db, $docid), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
