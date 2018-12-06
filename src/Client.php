@@ -921,6 +921,39 @@ class Client
     }
 
     /**
+     * Uploads the supplied content as an attachment to the specified document
+     * @link https://docs.couchdb.org/en/stable/api/document/attachments.html#put--db-docid-attname
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $attname
+     * @param string $rev
+     * @param array $att
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws ConflictException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function createDocumentAttachment(
+        string $db,
+        string $docid,
+        string $attname,
+        string $rev,
+        array $att
+    ): array {
+        $params = [
+            'query' => ['rev' => $rev],
+            'json'  => $att,
+        ];
+        return $this->request('PUT', sprintf('/%s/%s/%s', $db, $docid, $attname), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
