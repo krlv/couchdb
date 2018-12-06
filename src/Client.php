@@ -954,6 +954,35 @@ class Client
     }
 
     /**
+     * Deletes an attachment of a document
+     * @link https://docs.couchdb.org/en/stable/api/document/attachments.html#delete--db-docid-attname
+     *
+     * @param string $db
+     * @param string $docid
+     * @param string $attname
+     * @param string $rev
+     * @param array $params
+     *
+     * @return array
+     *
+     * @throws UnauthorizedException
+     * @throws NotFoundException
+     * @throws RuntimeException
+     * @throws ConnectionException
+     */
+    public function deleteDocumentAttachment(
+        string $db,
+        string $docid,
+        string $attname,
+        string $rev,
+        array $params = []
+    ): array {
+        $params = array_merge($params, ['rev' => $rev]);
+        $params = ['query' => $params];
+        return $this->request('DELETE', sprintf('/%s/%s/%s', $db, $docid, $attname), $params);
+    }
+
+    /**
      * Sends request to the CouchDB HTTP API and handles response
      *
      * @param string $method
